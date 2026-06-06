@@ -1,0 +1,6 @@
+{
+  "name": "Tucker Console v200.0",
+  "description": "Total Convergence Edition: Sovereign Node anchored at 13101 Bonebank Road. Multi-modal, quantum-aware, device-integrated AI Client.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
