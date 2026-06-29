@@ -1,6 +1,9 @@
 {
     "recommendations": [
         "oleg-shilo.cs-script",
-        "matthiesen-technology.yaml-with-script"
+        "matthiesen-technology.yaml-with-script",
+        "ms-azuretools.vscode-docker",
+        "docker.docker",
+        "ms-azuretools.vscode-containers"
     ]
 }
