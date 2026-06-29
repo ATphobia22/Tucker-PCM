@@ -1,0 +1,148 @@
+version: '3.9'
+services:
+  township_node:
+    build: .
+    container_name: township_sovereign_node
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./alerts:/app/alerts
+      - ./logs:/app/logs
+    environment:
+      - DB_PATH=/app/data/township_twin.db
+      - SMS_DISPATCH_ACTIVE=true
+      - TELEMETRY_STREAM_FREQUENCY_HZ=10
+      - REDIS_URL=redis://redis:6379
+      - SURREALDB_URL=ws://surrealdb:8000
+      - RAY_HEAD_SERVICE_HOST=ray-head
+      - RAY_HEAD_SERVICE_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+      - surrealdb
+      - ray-head
+    restart: always
+    networks:
+      - township-net
+
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: township_postgis
+    environment:
+      POSTGRES_DB: township
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: township_secure_2024
+      TIMESCALEDB_TELEMETRY: "off"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - township-net
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: township_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    networks:
+      - township-net
+    restart: always
+
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    container_name: township_surrealdb
+    ports:
+      - "8000:8000"
+    command: start --log debug --auth --allow-all
+    environment:
+      SURREAL_USER: admin
+      SURREAL_PASSWORD: township_secure_2024
+    volumes:
+      - surrealdb_data:/data
+    networks:
+      - township-net
+    restart: always
+
+  ray-head:
+    image: rayproject/ray:latest-gpu
+    container_name: township_ray_head
+    ports:
+      - "6379:6379"
+      - "8265:8265"
+    command: ray start --head --port=6379 --include-dashboard
+    volumes:
+      - ray_data:/tmp/ray
+    networks:
+      - township-net
+    restart: always
+
+  ray-worker:
+    image: rayproject/ray:latest-gpu
+    container_name: township_ray_worker
+    command: ray start --address=ray-head:6379
+    depends_on:
+      - ray-head
+    networks:
+      - township-net
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: township_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - township-net
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: township_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: township_secure_2024
+      GF_INSTALL_PLUGINS: grafana-worldmap-panel,grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - township-net
+    restart: always
+
+  mlflow:
+    image: python:3.11-slim
+    container_name: township_mlflow
+    ports:
+      - "5000:5000"
+    command: bash -c 'pip install mlflow && mlflow server --host 0.0.0.0'
+    networks:
+      - township-net
+    restart: always
+
+networks:
+  township-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  surrealdb_data:
+  ray_data:
+  prometheus_data:
+  grafana_data:
