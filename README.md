@@ -14,6 +14,7 @@ A production-grade, real-time flood monitoring and forecasting system combining 
 - **LiDAR & GIS Integration** (PDAL/PostGIS) for terrain analysis
 - **Real-Time USGS Data** integration for live flow monitoring
 - **Material Stability** verification for engineering compliance
+- **Indiana GIS Integration** for state-level geospatial context
 
 ## Architecture
 
@@ -31,12 +32,14 @@ point-township-digital-twin/
 ├── emergency_dispatcher.py        # Multi-channel alert system
 ├── geospatial_lidar.py           # LiDAR/PDAL processing
 ├── usgs_telemetry_bridge.py      # Real-time USGS data ingest
+├── gis_data_aggregator.py        # Indiana GIS data integration
 ├── material_stability.py          # Engineering compliance verification
 ├── frontend/                      # Svelte 5 + Mapbox GL dashboard
 ├── docker-compose.yml            # Full service stack
 ├── Dockerfile                    # Multi-stage build
 ├── bootstrap.sh                  # One-button deployment
-└── deploy.sh                     # Production deployer
+├── deploy.sh                     # Production deployer
+└── DATA_SOURCES.md               # External APIs documentation
 ```
 
 ### Service Stack
@@ -57,6 +60,10 @@ point-township-digital-twin/
 - Prometheus (metrics collection)
 - Grafana (dashboards)
 - MLflow (model tracking)
+
+**Data Integration:**
+- Indiana GIS Data Services aggregator
+- USGS Water Information System (NWIS) bridge
 
 ## Key Features
 
@@ -96,6 +103,29 @@ GET /api/v21/graph/propagation/{station_id}
 ```
 Query downstream flood wave travel using SurrealDB temporal graphs.
 
+### 7. Geospatial Data Integration
+```bash
+GET /api/v21/gis/terrain/{location}
+GET /api/v21/gis/utilities/{location}
+GET /api/v21/gis/historic-sites/{location}
+```
+Access Indiana GIS data for terrain analysis, utility networks, and infrastructure protection.
+
+## External Data Sources
+
+This system integrates with multiple Indiana GIS and federal data sources:
+
+### Indiana GIS APIs
+- **ESRI GIS Data Server**: https://gisdata.in.gov/server/rest/services
+- **Indiana Map Portal**: https://www.indianamap.org/datasets/INMap::idnr-surveyed-historic-sites-and-structures/about
+- **Indiana University GIS**: https://gis.iu.edu/
+- **GIS Data Harvest API**: https://dataharvest.gio.in.gov/api/search/definition/
+
+### Federal Data Sources
+- **USGS NWIS**: Real-time streamflow and stage data
+
+📖 **Full Documentation:** See [DATA_SOURCES.md](./DATA_SOURCES.md) for detailed API configuration and integration details.
+
 ## Quick Start
 
 ### Prerequisites
@@ -124,6 +154,12 @@ Edit `.env` with your settings:
 MAPBOX_TOKEN=your_mapbox_token
 TWILIO_ACCOUNT_SID=your_sid
 TWILIO_AUTH_TOKEN=your_token
+
+# Indiana GIS Integration
+GIO_DATAHARVEST_API_KEY=your_api_key
+GIO_DATAHARVEST_URL=https://dataharvest.gio.in.gov/api
+ESRI_GIS_URL=https://gisdata.in.gov/server/rest/services
+IU_GIS_URL=https://gis.iu.edu/
 ```
 
 ### Verify Deployment
@@ -137,6 +173,9 @@ docker-compose logs -f core_orchestrator
 
 # Test health endpoint
 curl http://localhost:8000/health
+
+# Test GIS integration
+curl http://localhost:8000/api/v21/gis/health
 ```
 
 ## API Endpoints
@@ -153,6 +192,11 @@ curl http://localhost:8000/health
 
 ### Alerts
 - `POST /api/v21/emergency/dispatch` - Send emergency notifications
+
+### Geospatial Data
+- `GET /api/v21/gis/terrain/{location}` - Terrain and elevation data
+- `GET /api/v21/gis/utilities/{location}` - Utility network locations
+- `GET /api/v21/gis/historic-sites/{location}` - Historic site protection
 
 ### Monitoring
 - `GET /health` - System health check
@@ -189,6 +233,7 @@ Solves 1D shallow water equations:
 - **Forecast Latency**: <2s for 24-hour ensemble
 - **Risk Assessment**: <500ms for 500 parcels
 - **Sensor Fusion**: Sub-millisecond with QEC
+- **GIS Data Query**: <1s for 500+ feature queries with caching
 
 ## Data Model
 
@@ -202,6 +247,19 @@ CREATE TABLE telemetry (
     temperature_c DOUBLE,
     latitude DOUBLE,
     longitude DOUBLE
+);
+```
+
+### Geospatial Schema
+```sql
+CREATE TABLE gis_features (
+    feature_id UUID PRIMARY KEY,
+    source VARCHAR,
+    feature_type VARCHAR,
+    geometry GEOMETRY,
+    properties JSONB,
+    updated_at TIMESTAMP,
+    cached_until TIMESTAMP
 );
 ```
 
@@ -223,6 +281,7 @@ bash deploy.sh
 - Grafana dashboards at `:3000`
 - Application logs: `docker-compose logs`
 - Real-time Ray cluster monitoring: `:8265`
+- GIS integration logs: `docker-compose logs gis_aggregator`
 
 ## Contributing
 
@@ -244,11 +303,15 @@ MIT License - See LICENSE file
 8. PostGIS/TimescaleDB: Spatial + Time-Series Databases
 9. Ray Distributed Computing Framework
 10. Svelte 5 & Mapbox GL: Frontend Technologies
+11. Indiana GIS Data Harvest (gio.in.gov)
+12. Indiana University GIS Portal
+13. ESRI ArcGIS REST Services
+14. Indiana Map Portal & IDNR
 
 ## Status
 
-✅ **OPERATIONAL** | Version: 21.0-bleeding-edge | Last Updated: 2026-06-29
+✅ **OPERATIONAL** | Version: 21.0-bleeding-edge | Last Updated: 2026-07-02
 
 ---
 
-**Point Township Digital Twin** - Real-time flood monitoring and AI-powered forecasting for tri-state region.
+**Point Township Digital Twin** - Real-time flood monitoring and AI-powered forecasting for tri-state region with comprehensive Indiana GIS integration.
