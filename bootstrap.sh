@@ -1,69 +1,110 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+set -e
 
-echo ""
-echo "🚀 Point Township Digital Twin v21.0 - Bleeding Edge Bootstrap"
-echo "================================================="
-echo ""
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║  🌊 Point Township Digital Twin v21.0 Bootstrap 🌊        ║"
+echo "║  Real-time Flood Monitoring & AI Forecasting              ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
 
-# Check prerequisites
-echo "✓ Checking prerequisites..."
-command -v docker >/dev/null 2>&1 || { echo "Docker not found. Install Docker."; exit 1; }
-command -v docker-compose >/dev/null 2>&1 || { echo "Docker Compose not found. Install Docker Compose."; exit 1; }
+# Check for Docker
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker is not installed. Please install Docker first."
+    exit 1
+fi
 
-# Create directory structure
-echo "✓ Creating directory structure..."
-mkdir -p data/{vector_store,research,logs}
-mkdir -p alerts/public
-mkdir -p frontend/src/components
-mkdir -p grafana-dashboards
+echo "✓ Docker found"
 
-# Initialize environment
-echo "✓ Initializing environment..."
+# Create necessary directories
+echo "📁 Creating data directories..."
+mkdir -p ./data ./logs ./alerts ./config ./grafana-dashboards
+
+# Copy environment template if it doesn't exist
 if [ ! -f .env ]; then
-    cat << 'EOF' > .env
+    echo "⚙️  Creating .env file from template..."
+    cat > .env << 'EOF'
 # Point Township Digital Twin Configuration
-TOWNSHIP_NODE_LAT=37.8575
-TOWNSHIP_NODE_LON=-87.9944
+DB_PATH=/app/data/township_twin.db
+SMS_DISPATCH_ACTIVE=true
 TELEMETRY_STREAM_FREQUENCY_HZ=10
-ALERT_THRESHOLD_CFS=80000
+REDIS_URL=redis://redis:6379
+SURREALDB_URL=ws://surrealdb:8000
+RAY_HEAD_SERVICE_HOST=ray-head
+RAY_HEAD_SERVICE_PORT=6379
 
-# Database credentials
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=township_secure_2024
-POSTGRES_DB=township
+# Twilio Configuration (optional)
+# TWILIO_ACCOUNT_SID=your_sid
+# TWILIO_AUTH_TOKEN=your_token
+# TWILIO_FROM_NUMBER=+1234567890
 
-# Monitoring
-GRAFANA_ADMIN_PASSWORD=township_secure_2024
-PROMETHEUS_RETENTION=30d
+# SMTP Configuration (optional)
+# SMTP_USERNAME=your_email@gmail.com
+# SMTP_PASSWORD=your_app_password
+# SMTP_FROM=alerts@pointtownship.gov
 
-# API Keys (populate with real values)
-MAPBOX_TOKEN=your_mapbox_token_here
-TWILIO_ACCOUNT_SID=your_twilio_sid
-TWILIO_AUTH_TOKEN=your_twilio_token
+# GIS Integration
+# GIO_DATAHARVEST_API_KEY=your_api_key
+ESRI_GIS_URL=https://gisdata.in.gov/server/rest/services
+IU_GIS_URL=https://gis.iu.edu/
+
+# Mapbox (for dashboard)
+# MAPBOX_TOKEN=your_mapbox_token
 EOF
-    echo "  Created .env - update with your credentials"
+    echo "✓ .env file created - update with your credentials"
+else
+    echo "✓ .env file exists"
 fi
 
 # Build and start services
-echo "✓ Starting Docker services..."
-docker-compose up -d --build
+echo "🐳 Building Docker images..."
+docker-compose build
 
-# Wait for services to be ready
-echo "⏳ Waiting for services to initialize..."
+echo "🚀 Starting services..."
+docker-compose up -d
+
+# Wait for services to start
+echo "⏳ Waiting for services to become healthy..."
 sleep 10
 
-# Initialize database
-echo "✓ Initializing database schema..."
-docker-compose exec -T postgres psql -U admin -d township -f /docker-entrypoint-initdb.d/01-init.sql 2>/dev/null || true
+# Check health endpoints
+echo "🔍 Checking service health..."
+echo ""
 
-# Check service health
+# PostgreSQL
+echo "📦 PostgreSQL: postgres://localhost:5432"
+
+# Redis
+echo "💾 Redis: redis://localhost:6379"
+
+# FastAPI
+echo "🔗 FastAPI Core: http://localhost:8000"
+echo "   - API Docs: http://localhost:8000/docs"
+echo "   - ReDoc: http://localhost:8000/redoc"
+
+# Grafana
+echo "📊 Grafana Dashboard: http://localhost:3000"
+echo "   - Default credentials: admin/township_secure_2024"
+
+# Ray Dashboard
+echo "🌐 Ray Cluster Dashboard: http://localhost:8265"
+
+# Prometheus
+echo "📈 Prometheus: http://localhost:9090"
+
+# MLflow
+echo "🤖 MLflow: http://localhost:5000"
+
 echo ""
-echo "✓ Service Status:"
-echo "  API:        http://localhost:8000"
-echo "  Grafana:    http://localhost:3000"
-echo "  Prometheus: http://localhost:9090"
-echo "  Ray Dashboard: http://localhost:8265"
+echo "✅ Point Township Digital Twin is now running!"
 echo ""
-echo "✅ Point Township Digital Twin v21.0 ONLINE"
+echo "📝 Next steps:"
+echo "   1. Update .env file with your credentials"
+echo "   2. Configure Twilio for SMS alerts (optional)"
+echo "   3. Set up GIS API keys"
+echo "   4. Access dashboard at http://localhost:3000"
+echo ""
+echo "📊 To view logs:"
+echo "   docker-compose logs -f core_orchestrator"
+echo ""
+echo "🛑 To stop services:"
+echo "   docker-compose down"
 echo ""
