@@ -35,9 +35,9 @@ pdal==3.4.0
 postgis==0.0.1
 
 # Distributed Computing
-ray==2.9.2
-ray[tune]==2.9.2
-ray[serve]==2.9.2
+ray==2.56.0
+ray[tune]==2.56.0
+ray[serve]==2.56.0
 
 # Physics & ML
 deepxde==1.10.3
