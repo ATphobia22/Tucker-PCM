@@ -71,7 +71,7 @@ opentelemetry-instrumentation-sqlalchemy==0.42b0
 
 # Alerting & Notifications
 twilio==8.10.0
-aiosmtplib==3.0.1
+aiosmtplib==5.1.2
 slack-sdk==3.26.1
 
 # External API Clients
