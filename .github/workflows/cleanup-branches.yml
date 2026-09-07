@@ -1,0 +1,32 @@
+name: Cleanup Branches
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged/stale branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DEFAULT=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
+          PROTECTED="^(main|master|develop|$DEFAULT)$"
+          gh api "repos/${{ github.repository }}/branches" --paginate -q '.[].name' | while read -r b; do
+            if [[ $b =~ $PROTECTED ]]; then
+              echo "skip $b"
+              continue
+            fi
+            STATUS=$(gh api "repos/${{ github.repository }}/compare/$DEFAULT...$b" -q '.status' 2>/dev/null || echo "error")
+            if [[ "$STATUS" == "identical" ]]; then
+              echo "delete $b"
+              gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/$b" || true
+            else
+              echo "keep $b ($STATUS)"
+            fi
+          done
