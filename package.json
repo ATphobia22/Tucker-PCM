@@ -26,7 +26,7 @@
     "react-force-graph-3d": "^1.29.1",
     "tailwind-merge": "^3.6.0",
     "three": "^0.184.0",
-    "vite": "^6.2.3",
+    "vite": "^6.4.5",
     "ws": "^8.21.0"
   },
   "devDependencies": {
@@ -38,6 +38,6 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.4.5"
   }
 }
