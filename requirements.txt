@@ -30,7 +30,7 @@ geopandas==0.14.0
 shapely==2.0.2
 pyproj==3.6.1
 rasterio==1.3.9
-fiona==1.9.5
+fiona==1.10b2
 pdal==3.4.0
 postgis==0.0.1
 
